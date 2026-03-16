@@ -92,49 +92,56 @@
     </a-scene>
 
     <script>
-      const video   = document.querySelector('#vid');
-      const nft     = document.querySelector('a-nft');
-      const loader  = document.getElementById('arjs-loader');
-      const startScreen = document.getElementById('start-screen');
-      const startBtn    = document.getElementById('start-btn');
-
-      // ── Paso 1: el usuario toca "Iniciar" → desbloqueamos autoplay ──
-      startBtn.addEventListener('click', () => {
-        // Intentar play + pause para "desbloquear" el elemento de video
-        video.play().then(() => {
-          video.pause();
-          video.currentTime = 0;
-        }).catch(() => {});
-
-        startScreen.style.display = 'none';
-      });
-
-      nft.addEventListener('nft-found', () => {
-        console.log('✅ Marcador detectado');
-        document.body.style.border = '5px solid lime'; // borde verde visible
-        video.play().catch(err => console.warn('Error al reproducir:', err));
-      });
-      
-      nft.addEventListener('nft-lost', () => {
-        console.log('❌ Marcador perdido');
-        document.body.style.border = 'none';
+    const video = document.querySelector('#vid');
+    const nft = document.querySelector('a-nft');
+    const loader = document.getElementById('arjs-loader');
+    const startScreen = document.getElementById('start-screen');
+    const startBtn = document.getElementById('start-btn');
+  
+    // Panel de debug visible en pantalla
+    const debug = document.createElement('div');
+    debug.style.cssText = `
+      position:fixed; bottom:0; left:0; right:0; z-index:99999;
+      background:rgba(0,0,0,0.8); color:lime; font-size:13px;
+      font-family:monospace; padding:8px; max-height:35vh; overflow-y:auto;
+    `;
+    document.body.appendChild(debug);
+  
+    function log(msg) {
+      const line = document.createElement('div');
+      line.textContent = '► ' + msg;
+      debug.appendChild(line);
+      debug.scrollTop = debug.scrollHeight;
+    }
+  
+    startBtn.addEventListener('click', () => {
+      video.play().then(() => {
         video.pause();
-      });
-
-      // ── Paso 2: ocultar loader cuando la escena esté lista ──
-      const scene = document.querySelector('a-scene');
-      scene.addEventListener('loaded', () => {
-        loader.style.display = 'none';
-      });
-
-      // ── Paso 3: reproducir/pausar según detección del marcador ──
-      nft.addEventListener('nft-found', () => {
-        video.play().catch(err => console.warn('Error al reproducir:', err));
-      });
-
-      nft.addEventListener('nft-lost', () => {
-        video.pause();
-      });
-    </script>
+        video.currentTime = 0;
+        log('✅ Video desbloqueado');
+      }).catch(e => log('❌ Video error: ' + e.message));
+      startScreen.style.display = 'none';
+      log('📷 Cámara iniciando...');
+    });
+  
+    document.querySelector('a-scene').addEventListener('loaded', () => {
+      loader.style.display = 'none';
+      log('✅ Escena AR lista');
+    });
+  
+    nft.addEventListener('nft-found', () => {
+      log('🎯 ¡Marcador detectado!');
+      video.play().catch(e => log('❌ Play error: ' + e.message));
+    });
+  
+    nft.addEventListener('nft-lost', () => {
+      log('👋 Marcador perdido');
+      video.pause();
+    });
+  
+    // Detectar si el video cargó
+    video.addEventListener('loadeddata', () => log('✅ Video cargado'));
+    video.addEventListener('error', () => log('❌ Error cargando video'));
+  </script>
   </body>
 </html>
