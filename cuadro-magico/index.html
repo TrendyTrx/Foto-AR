@@ -109,6 +109,18 @@
         startScreen.style.display = 'none';
       });
 
+      nft.addEventListener('nft-found', () => {
+        console.log('✅ Marcador detectado');
+        document.body.style.border = '5px solid lime'; // borde verde visible
+        video.play().catch(err => console.warn('Error al reproducir:', err));
+      });
+      
+      nft.addEventListener('nft-lost', () => {
+        console.log('❌ Marcador perdido');
+        document.body.style.border = 'none';
+        video.pause();
+      });
+
       // ── Paso 2: ocultar loader cuando la escena esté lista ──
       const scene = document.querySelector('a-scene');
       scene.addEventListener('loaded', () => {
