@@ -7,17 +7,49 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     
     <style>
+      body { margin: 0; overflow: hidden; }
+
+      /* Pantalla de inicio — fuerza gesto del usuario para desbloquear video */
+      #start-screen {
+        position: fixed; inset: 0; z-index: 99999;
+        background: rgba(0,0,0,0.85);
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        color: white; font-family: sans-serif; text-align: center;
+        padding: 20px;
+      }
+      #start-screen button {
+        margin-top: 20px; padding: 14px 32px;
+        font-size: 1.2em; border: none; border-radius: 10px;
+        background: #e94560; color: white; cursor: pointer;
+      }
+
+      /* Loader de AR.js */
       .arjs-loader {
         height: 100%; width: 100%; position: absolute; top: 0; left: 0;
-        background-color: rgba(0, 0, 0, 0.8); z-index: 9999;
+        background-color: rgba(0,0,0,0.8); z-index: 9998;
         display: flex; justify-content: center; align-items: center;
       }
-      .arjs-loader div { text-align: center; font-size: 1.25em; color: white; font-family: sans-serif; }
+      .arjs-loader div {
+        text-align: center; font-size: 1.25em;
+        color: white; font-family: sans-serif;
+      }
     </style>
   </head>
 
-  <body style="margin: 0px; overflow: hidden;">
-    
+  <body>
+
+    <!-- 1. Pantalla de inicio: resuelve el bloqueo de autoplay en móviles -->
+    <div id="start-screen">
+      <p style="font-size:1.3em;">📸 Apunta la cámara<br>a la imagen mágica</p>
+      <p style="font-size:0.9em; opacity:0.7;">Toca el botón para activar la cámara</p>
+      <button id="start-btn">✨ Iniciar experiencia</button>
+    </div>
+
+    <!-- 2. Loader mientras AR.js inicializa -->
+    <div class="arjs-loader" id="arjs-loader">
+      <div>Cargando la magia...</div>
+    </div>
 
     <a-scene
       vr-mode-ui="enabled: false;"
@@ -26,20 +58,27 @@
       arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
       <a-assets>
-        <video id="vid" src="20260316-0625-56.2460858.mp4" 
-               preload="auto" response-type="arraybuffer" loop 
-               crossorigin="anonymous" webkit-playsinline playsinline>
+        <!-- muted es OBLIGATORIO para autoplay en móviles -->
+        <video
+          id="vid"
+          src="20260316-0625-56.2460858.mp4"
+          preload="auto"
+          loop
+          muted
+          playsinline
+          webkit-playsinline
+          crossorigin="anonymous">
         </video>
       </a-assets>
 
       <a-nft
         type="nft"
-        url=".markers/parejaAR"
+        url="./markers/parejaAR"
         smooth="true"
         smoothCount="10"
         smoothTolerance=".01"
         smoothThreshold="5">
-        
+
         <a-video
           src="#vid"
           width="150"
@@ -53,19 +92,36 @@
     </a-scene>
 
     <script>
-      // Lógica para reproducir el video al detectar la imagen
-      window.addEventListener('click', () => {
-          const v = document.querySelector('#vid');
-          v.play();
-          v.pause();
+      const video   = document.querySelector('#vid');
+      const nft     = document.querySelector('a-nft');
+      const loader  = document.getElementById('arjs-loader');
+      const startScreen = document.getElementById('start-screen');
+      const startBtn    = document.getElementById('start-btn');
+
+      // ── Paso 1: el usuario toca "Iniciar" → desbloqueamos autoplay ──
+      startBtn.addEventListener('click', () => {
+        // Intentar play + pause para "desbloquear" el elemento de video
+        video.play().then(() => {
+          video.pause();
+          video.currentTime = 0;
+        }).catch(() => {});
+
+        startScreen.style.display = 'none';
       });
 
-      const nft = document.querySelector('a-nft');
-      nft.addEventListener('nft-found', () => {
-          document.querySelector('#vid').play();
+      // ── Paso 2: ocultar loader cuando la escena esté lista ──
+      const scene = document.querySelector('a-scene');
+      scene.addEventListener('loaded', () => {
+        loader.style.display = 'none';
       });
+
+      // ── Paso 3: reproducir/pausar según detección del marcador ──
+      nft.addEventListener('nft-found', () => {
+        video.play().catch(err => console.warn('Error al reproducir:', err));
+      });
+
       nft.addEventListener('nft-lost', () => {
-          document.querySelector('#vid').pause();
+        video.pause();
       });
     </script>
   </body>
